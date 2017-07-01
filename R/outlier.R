@@ -66,10 +66,13 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = T
     out = bivar_func[[type]](x, y)
     names(out) = c(var1, var2)
 
-    return(list(info = info, outliers = out, info = info))
+    return(list(outliers = out, info = info))
 }
 
 
 remove_outliers = function(dataset, outliers) {
-    dplyr::anti_join(dataset, outliers, by = names(outliers))
+    clean_data = dplyr::anti_join(dataset, outliers, by = names(outliers))
+    clean_data = dplyr::arrange(clean_data, idx_)
+    rownames(clean_data) <- clean_data$idx_
+    return(clean_data)
 }
