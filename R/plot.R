@@ -1,4 +1,4 @@
-plot_univar = function(dataset, var, type="histogram", rm_na = TRUE, modifier = NULL) {
+plot_univar = function(dataset, var, type="histogram", modifier = NULL, rm_na = TRUE) {
     if (is.null(dataset)) return()
 
     if (rm_na == TRUE) {
@@ -21,7 +21,7 @@ plot_univar = function(dataset, var, type="histogram", rm_na = TRUE, modifier = 
 }
 
 
-plot_bivar = function(dataset, var1, var2, type="bvboxplot", rm_na = TRUE, modifier = NULL) {
+plot_bivar = function(dataset, var1, var2, type="bvboxplot", modifier = NULL, rm_na = TRUE) {
     if (is.null(dataset)) return()
 
     if (rm_na) {

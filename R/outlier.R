@@ -35,7 +35,7 @@ bivar_func = list(
 )
 
 
-univariate_outliers = function(dataset, var, type = "boxplot", rm_na = TRUE) {
+univariate_outliers = function(dataset, var, type = "boxplot", modifier = NULL, rm_na = TRUE) {
     if (is.null(dataset)) return()
 
     if (rm_na == TRUE) {
@@ -43,6 +43,11 @@ univariate_outliers = function(dataset, var, type = "boxplot", rm_na = TRUE) {
     }
 
     x = dataset[[var]]
+
+    if (!is.null(modifier)) {
+        x = apply_modifier(x, modifier)
+    }
+
     out = univar_func[[type]](x)
     names(out) = var
 
@@ -52,7 +57,7 @@ univariate_outliers = function(dataset, var, type = "boxplot", rm_na = TRUE) {
 }
 
 
-bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = TRUE) {
+bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", modifier = NULL, rm_na = TRUE) {
     if (is.null(dataset)) return()
 
     if (rm_na == TRUE) {
@@ -61,6 +66,18 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = T
 
     x = dataset[[var1]]
     y = dataset[[var2]]
+
+    if (!is.null(modifier)) {
+        x = apply_modifier(x, modifier)
+        y = apply_modifier(y, modifier)
+
+        aux_df = data.frame(x,y)
+        aux_df = aux_df[is.finite(aux_df$x) & is.finite(aux_df$y), ]
+
+        x = aux_df[['x']]
+        y = aux_df[['y']]
+    }
+
     out = bivar_func[[type]](x, y)
     names(out) = c(var1, var2)
 
@@ -70,11 +87,16 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = T
 }
 
 
-remove_outliers = function(dataset, var, type) {
+remove_outliers = function(dataset, var, type, modifier = NULL) {
     if (length(var) == 1) { # Univar
-        outliers = univariate_outliers(dataset, var, type)$outliers
+        outliers = univariate_outliers(dataset, var, type, modifier)$outliers
+
     } else if (length(var) == 2) { # Bivar
-        outliers = bivariate_outliers(dataset, var[1], var[2], type)$outliers
+        outliers = bivariate_outliers(dataset, var[1], var[2], type, modifier)$outliers
+    }
+
+    if (!is.null(modifier)) {
+        dataset[var] = data.frame(lapply(dataset[var], function(x) apply_modifier(x, modifier)))
     }
 
     clean_data = dplyr::anti_join(dataset, outliers, by = names(outliers))
