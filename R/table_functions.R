@@ -30,3 +30,10 @@ get_info = function(dataset) {
 
     return(info)
 }
+
+
+get_summary = function(dataset) {
+    s = ""
+    retunr(s)
+}
+
