@@ -1,4 +1,3 @@
-
 filter_factor = function(dataset, var, val) {
     dataset[dataset[[var]] %in% val & !is.na(dataset[[var]]),]
 }
@@ -37,3 +36,9 @@ get_summary = function(dataset) {
     retunr(s)
 }
 
+
+apply_modifier = function(x, modifier) {
+    if (modifier == "log") {
+        return(log(x))
+    }
+}
