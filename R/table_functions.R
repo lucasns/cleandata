@@ -1,6 +1,6 @@
 read_dataset = function(file) {
     dataset = read.csv(file)
-    dataset <- cbind("idx_" = as.numeric(rownames(dataset)), dataset)
+    return(dataset)
 }
 
 

@@ -86,9 +86,6 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", modifier 
         print(cond)
     })
 
-
-
-
     info = paste(nrow(out), "outliers detected.")
 
     return(list(outliers = out, info = info))
@@ -96,6 +93,8 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", modifier 
 
 
 remove_outliers = function(dataset, var, type, modifier = NULL) {
+    dataset = cbind("idx_aux" = as.numeric(rownames(dataset)), dataset)
+
     if (length(var) == 1) { # Univar
         outliers = univariate_outliers(dataset, var, type, modifier)$outliers
 
@@ -108,10 +107,10 @@ remove_outliers = function(dataset, var, type, modifier = NULL) {
     }
 
     clean_data = dplyr::anti_join(dataset, outliers, by = names(outliers))
-    clean_data = dplyr::arrange(clean_data, idx_)
-    rownames(clean_data) <- clean_data$idx_
+    clean_data = dplyr::arrange(clean_data, idx_aux)
+    rownames(clean_data) = clean_data$idx_aux
 
     info = paste(nrow(outliers), "rows removed.")
 
-    return(list(data = clean_data, info = info))
+    return(list(data = clean_data[, !(colnames(clean_data) == "idx_aux")], info = info))
 }
