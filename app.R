@@ -204,7 +204,8 @@ server <- function(input, output) {
     values <- reactiveValues(table = NULL,
                              select = NULL,
                              outliers = NULL,
-                             plot = NULL)
+                             plot = NULL,
+                             camps = NULL)
 
     dataFile = reactive({
 
@@ -221,6 +222,17 @@ server <- function(input, output) {
 
     info = reactive({
         get_info(values$select)
+    })
+
+    camps = reactive({
+        c = get_info(values$select)
+        if (length(c) > 0 && !is.null(values$camps) && c == values$camps) {
+            print("same")
+        } else {
+            values$camps = c
+        }
+
+        values$camps
     })
 
     observeEvent(input$applyFilter, {
@@ -341,7 +353,7 @@ server <- function(input, output) {
 
 
     output$outlierUni = renderUI({
-        selectizeInput("outlierUni", "Column:", choices = names(info()), width = "90%",
+        selectizeInput("outlierUni", "Column:", choices = camps(), width = "90%",
                        options = list(
                            placeholder = 'Select an option',
                            onInitialize = I('function() { this.setValue(""); }')
@@ -485,11 +497,12 @@ server <- function(input, output) {
             ct2 = info()[[input$outlierBi2]]$type
 
             if (ct1 != "factor" && ct2 != "factor") {
-                out = bivarOutliers(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi)
-                values$select = rmOutliers(values$select, out$outliers)
+                out = remove_outliers(values$select, c(input$outlierBi1, input$outlierBi2), input$outlierTypeBi, input$outLogBi)
+                values$select = out$data
+                print(out$info)
 
                 output$plotOutput = renderPlot({
-                    isolate(plotBivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi))
+                    isolate(plot_bivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi))
                 })
 
             } else {
