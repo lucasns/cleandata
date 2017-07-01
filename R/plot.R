@@ -9,15 +9,27 @@ plot_univar = function(dataset, var, type="histogram", modifier = NULL, rm_na = 
 
     if (!is.null(modifier)) {
         x = apply_modifier(x, modifier)
+        var_name = paste(modifier, "(", var, ")")
+    } else {
+        var_name = var
     }
 
     plot_func = switch(type,
-                      plot = plot,
-                      histogram = hist,
-                      boxplot = boxplot
+                       plot = function(x, var_name) {
+                           plot(x, main = NULL, ylab = var_name)
+                       },
+
+                       histogram = function(x, var_name) {
+                           hist(x, main = NULL, xlab = var_name)
+                       },
+
+                       boxplot = function(x, var_name) {
+                           boxplot(x, main = NULL, xlab = var_name, ylab = "Value")
+                       }
     )
 
-    plot_func(x)
+
+    plot_func(x, var_name)
 }
 
 
@@ -40,14 +52,21 @@ plot_bivar = function(dataset, var1, var2, type="bvboxplot", modifier = NULL, rm
 
         x = aux_df[['x']]
         y = aux_df[['y']]
+
+        xl = paste(modifier, "(", var1, ")")
+        yl = paste(modifier, "(", var2, ")")
+
+    } else {
+        xl = var1
+        yl = var2
     }
 
     plot_func = switch(type,
-                      bvboxplot = function(x, y) {
-                          bv.boxplot(x, y, bg = 'blue', bg.out = 'red')
-                      },
-                      plot = plot
+                       bvboxplot = function(x, y, xlab, ylab) {
+                           bv.boxplot(x, y, bg = 'blue', bg.out = 'red', xlab = xlab, ylab = ylab)
+                       },
+                       plot = plot
     )
 
-    plot_func(x, y)
+    plot_func(x, y, xlab = xl, ylab = yl)
 }
