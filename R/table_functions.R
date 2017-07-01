@@ -1,3 +1,9 @@
+read_dataset = function(file) {
+    dataset = read.csv(file)
+    dataset <- cbind("idx_" = as.numeric(rownames(dataset)), dataset)
+}
+
+
 filter_factor = function(dataset, var, val) {
     dataset[dataset[[var]] %in% val & !is.na(dataset[[var]]),]
 }
