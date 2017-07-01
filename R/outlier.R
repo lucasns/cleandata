@@ -78,8 +78,16 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", modifier 
         y = aux_df[['y']]
     }
 
-    out = bivar_func[[type]](x, y)
-    names(out) = c(var1, var2)
+    tryCatch({
+        out = bivar_func[[type]](x, y)
+        names(out) = c(var1, var2)
+    }, error = function(cond) {
+        out = NULL
+        print(cond)
+    })
+
+
+
 
     info = paste(nrow(out), "outliers detected.")
 
@@ -107,5 +115,3 @@ remove_outliers = function(dataset, var, type, modifier = NULL) {
 
     return(list(data = clean_data, info = info))
 }
-
-
