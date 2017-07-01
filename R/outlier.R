@@ -42,11 +42,11 @@ univariate_outliers = function(dataset, var, type = "boxplot", rm_na = TRUE) {
         dataset = dataset[!(is.na(dataset[[var]])),]
     }
 
-    info = ""
-
     x = dataset[[var]]
     out = univar_func[[type]](x)
     names(out) = var
+
+    info = paste(nrow(out), "outliers detected.")
 
     return(list(outliers = out, info = info))
 }
@@ -59,12 +59,12 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = T
         dataset = dataset[!(is.na(dataset[[var1]])) & !(is.na(dataset[[var2]])),]
     }
 
-    info = ""
-
     x = dataset[[var1]]
     y = dataset[[var2]]
     out = bivar_func[[type]](x, y)
     names(out) = c(var1, var2)
+
+    info = paste(nrow(out), "outliers detected.")
 
     return(list(outliers = out, info = info))
 }
