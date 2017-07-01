@@ -3,26 +3,23 @@ library(asbio)
 library(dplyr)
 
 
-outlier_boxplot = function(dataset, col, rm_na = TRUE) {
-    bp = boxplot(dataset[[col]])
+outlier_boxplot = function(x, rm_na = TRUE) {
+    bp = boxplot(x)
     out = data.frame(bp$out)
-    names(out) = col
     return(out)
 }
 
 
-outlier_bagplot = function(dataset, col1, col2) {
-    bp = aplpack::bagplot(dataset[[col1]], dataset[[col2]])
+outlier_bagplot = function(x, y) {
+    bp = aplpack::bagplot(x, y)
     out = data.frame(bp$pxy.outlier)
-    names(out) = c(col1, col2)
     return(out)
 }
 
 
-outlier_bv_boxplot = function(dataset, col1, col2) {
-    bp = asbio::bv.boxplot(dataset[[col1]], dataset[[col2]])
+outlier_bv_boxplot = function(x, y) {
+    bp = asbio::bv.boxplot(x, y)
     out = bp$out
-    names(out) = c(col1, col2)
     return(out)
 }
 
@@ -33,7 +30,7 @@ univar_func = list(
 
 
 bivar_func = list(
-    bagplot = outlier_bv_boxplot,
+    bagplot = outlier_bagplot,
     bvboxplot = outlier_bv_boxplot
 )
 
@@ -46,7 +43,10 @@ univariate_outliers = function(dataset, var, type = "boxplot", rm_na = TRUE) {
     }
 
     info = ""
-    out = univar_func[[type]](dataset, var)
+
+    x = dataset[[var]]
+    out = univar_func[[type]](x)
+    names(out) = var
 
     return(list(outliers = out, info = info))
 }
@@ -60,7 +60,11 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", rm_na = T
     }
 
     info = ""
-    out = bivar_func[[type]](dataset, var1, var2)
+
+    x = dataset[[var1]]
+    y = dataset[[var2]]
+    out = bivar_func[[type]](x, y)
+    names(out) = c(var1, var2)
 
     return(list(info = info, outliers = out, info = info))
 }
