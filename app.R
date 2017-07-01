@@ -4,7 +4,7 @@ library(DT)
 source("R/selection.R")
 source("R/plot.R")
 source("R/outlier.R")
-source("R/imputation.R")
+source("R/table_functions.R")
 
 
 options(encoding = 'UTF-8')
@@ -75,7 +75,7 @@ body <- dashboardBody(
                ),
 
                # Plot
-               box(width = NULL, status = "primary", title ="Plot", solidHeader = T, collapsible = T,
+               box(width = NULL, status = "primary", title ="Plot", solidHeader = T, collapsible = T, collapsed = T,
 
                    tabsetPanel(
                        id = "plotTabset",
@@ -129,7 +129,7 @@ body <- dashboardBody(
                        tabPanel("Univariate",
                                 br(),
                                 uiOutput("outlierUni"),
-                                checkboxInput("outLogUni", 'log'),
+                                checkboxGroupInput("outLogUni", NULL, c(log = "log"), FALSE),
 
                                 selectInput("outlierTypeUni", "Method",
                                              c("Bloxplot"="boxplot")
@@ -213,7 +213,7 @@ server <- function(input, output) {
         if (is.null(data))
             return(NULL)
 
-        file = read.csv(data$datapath)
+        file = read_dataset(data$datapath)
         values$table = file
         values$select = values$table
     })
@@ -431,10 +431,11 @@ server <- function(input, output) {
             ct = info()[[input$outlierUni]]$type
             if (ct != "factor") {
                 output$plotOutput = renderPlot({
-                    isolate(plot_univar(values$select, input$outlierUni, log = input$outLogUni, type = input$outlierTypeUni))
+                    isolate(plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni, input$outLogUni))
                 })
 
-                values$outliers = univarOutliers(values$select, input$outlierUni, input$outLogUni, input$outlierTypeUni)$outliers
+                out = univariate_outliers(values$select, input$outlierUni, input$outlierTypeUni, input$outLogUni)
+                print(out$info)
 
             } else {
                 print("Outlier var must be numeric")
@@ -447,10 +448,11 @@ server <- function(input, output) {
             if (ct1 != "factor" && ct2 != "factor") {
 
                 output$plotOutput = renderPlot({
-                    isolate(plotBivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi))
+                    isolate(plot_bivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi))
                 })
 
-                values$outliers = bivarOutliers(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi)$outliers
+                out = bivariate_outliers(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi)
+                print(out$info)
 
             } else {
                 print("Outlier var must be numeric")
@@ -465,9 +467,9 @@ server <- function(input, output) {
         if (input$outlierTabset == "Univariate" && input$outlierUni != "") {
             ct = info()[[input$outlierUni]]$type
             if (ct != "factor") {
-
-                outliers = univarOutliers(values$select, input$outlierUni, log = input$outLogUni, input$outlierTypeUni)$outliers
-                values$select = rmOutliers(values$select, outliers)
+                out = remove_outliers(values$select, input$outlierUni, input$outlierTypeUni, input$outLogUni)
+                values$select = out$data
+                print(out$info)
 
                 output$plotOutput = renderPlot({
                     isolate(plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni))
