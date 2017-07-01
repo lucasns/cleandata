@@ -9,7 +9,7 @@ plot_univar = function(dataset, var, type="histogram", modifier = NULL, rm_na = 
 
     if (!is.null(modifier)) {
         x = apply_modifier(x, modifier)
-        var_name = paste(modifier, "(", var, ")")
+        var_name = paste(modifier, paste0("(", var, ")"))
     } else {
         var_name = var
     }
@@ -53,8 +53,8 @@ plot_bivar = function(dataset, var1, var2, type="bvboxplot", modifier = NULL, rm
         x = aux_df[['x']]
         y = aux_df[['y']]
 
-        xl = paste(modifier, "(", var1, ")")
-        yl = paste(modifier, "(", var2, ")")
+        xl = paste(modifier, paste0("(", var1, ")"))
+        yl = paste(modifier, paste0("(", var2, ")"))
 
     } else {
         xl = var1
@@ -63,8 +63,13 @@ plot_bivar = function(dataset, var1, var2, type="bvboxplot", modifier = NULL, rm
 
     plot_func = switch(type,
                        bvboxplot = function(x, y, xlab, ylab) {
-                           bv.boxplot(x, y, bg = 'blue', bg.out = 'red', xlab = xlab, ylab = ylab)
+                           asbio::bv.boxplot(x, y, bg = 'blue', bg.out = 'red', xlab = xlab, ylab = ylab)
                        },
+
+                       bagplot = function(x, y, xlab, ylab) {
+                           aplpack::bagplot(x, y, xlab = xlab, ylab = ylab)
+                       },
+
                        plot = plot
     )
 
