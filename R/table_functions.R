@@ -38,8 +38,19 @@ get_info = function(dataset) {
 
 
 get_summary = function(dataset) {
-    s = ""
-    retunr(s)
+    list_summary <- function(x, na.rm=TRUE){
+        result <- list(Type = typeof(x),
+                       Mean=mean(x, na.rm=na.rm),
+                       SD=sd(x, na.rm=na.rm),
+                       Median=median(x, na.rm=na.rm),
+                       Min=min(x, na.rm=na.rm),
+                       Max=max(x, na.rm=na.rm),
+                       NAs=(sum(is.na(x))))
+    }
+
+    num_cols <- sapply(dataset, is.numeric)
+
+    sapply(dataset[, num_cols], list_summary)
 }
 
 
@@ -47,4 +58,15 @@ apply_modifier = function(x, modifier) {
     if (modifier == "log") {
         return(log(x))
     }
+}
+
+
+sub_dataset = function(dataset_x, dataset_y) {
+    dataset_x = cbind("idx_aux" = as.numeric(rownames(dataset_x)), dataset_x)
+    dataset_y = cbind("idx_aux" = as.numeric(rownames(dataset_y)), dataset_y)
+
+    new_data = dplyr::anti_join(dataset_x, dataset_y, by = "idx_aux")
+    new_data = dplyr::arrange(new_data, idx_aux)
+    rownames(new_data) = new_data$idx_aux
+    return(new_data[, !(colnames(new_data) == "idx_aux")])
 }
