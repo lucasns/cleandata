@@ -3,6 +3,26 @@ library(asbio)
 library(dplyr)
 
 
+outlier_sd = function(x, n = 2) {
+    x_mean = mean(x)
+    x_sd = sd(x)
+    lower = x_mean - n * x_sd
+    upper = x_mean + n * x_sd
+    out = x[x < lower | x > upper]
+    return(out)
+}
+
+
+outlier_mad = function(x, n = 2) {
+    x_median = median(x)
+    x_made = mad(x)
+    lower = x_median - n * x_made
+    upper =  x_median + n * x_made
+    out = x[x < lower | x > upper]
+    return(out)
+}
+
+
 outlier_boxplot = function(x, rm_na = TRUE) {
     bp = boxplot(x)
     out = data.frame(bp$out)
