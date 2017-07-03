@@ -16,7 +16,7 @@ header <- dashboardHeader(
 )
 
 
-sidebar <- dashboardSidebar(collapsed = T, disable = T,
+sidebar <- dashboardSidebar(collapsed = T, disable = F,
                             sidebarMenu(
                                 menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")
 
@@ -26,10 +26,6 @@ sidebar <- dashboardSidebar(collapsed = T, disable = T,
                                 ),
                                 menuItem("Charts", icon = icon("bar-chart-o")
                                 )
-
-
-
-
 
                             ),
 
@@ -54,6 +50,8 @@ body <- dashboardBody(
                    uiOutput("filterValue"),
 
                    actionButton("applyFilter", "Apply"),
+                   actionButton("rmFilter", "Remove Filters"),
+                   actionButton("rmUnselected", "Remove Unselected"),
 
                    br(),
                    br(),
@@ -87,7 +85,7 @@ body <- dashboardBody(
                                 checkboxGroupInput("plotLogUni", NULL, c(log = "log"), FALSE),
 
                                 selectInput("plotTypeUni", "Plot type",
-                                             c("Histogram" = "histogram", "Plot"="plot", "Bloxplot"="boxplot")
+                                            c("Histogram" = "histogram", "Plot"="plot", "Bloxplot"="boxplot")
                                 )
 
 
@@ -101,9 +99,9 @@ body <- dashboardBody(
                                 checkboxGroupInput("plotLogBi", NULL, c(log = "log"), FALSE),
 
                                 selectInput("plotTypeBi", "Plot type",
-                                             c("Plot"="plot",
-                                               "Bivariate Boxplot" = "bvboxplot"
-                                               )
+                                            c("Plot"="plot",
+                                              "Bivariate Boxplot" = "bvboxplot"
+                                            )
                                 )
 
 
@@ -132,7 +130,7 @@ body <- dashboardBody(
                                 checkboxGroupInput("outLogUni", NULL, c(log = "log"), FALSE),
 
                                 selectInput("outlierTypeUni", "Method",
-                                             c("Bloxplot"="boxplot")
+                                            c("Bloxplot"="boxplot")
                                 )
 
 
@@ -146,8 +144,8 @@ body <- dashboardBody(
                                 checkboxGroupInput("outLogBi", NULL, c(log = "log")),
 
                                 selectInput("outlierTypeBi", "Method",
-                                             c("Bivariate Boxplot" = "bvboxplot",
-                                               "Bagplot" = "bagplot")
+                                            c("Bivariate Boxplot" = "bvboxplot",
+                                              "Bagplot" = "bagplot")
                                 )
 
                        )
@@ -176,10 +174,11 @@ body <- dashboardBody(
                        # The id lets us use input$tabset1 on the server to find the current tab
                        id = "infoTabset",
                        tabPanel("Output",
-                                verbatimTextOutput('infoOutput')
+                                div(id = 'text', style = 'overflow: auto; max-height: 200px', verbatimTextOutput('infoOutput'))
+
                        ),
                        tabPanel("Summary",
-                                verbatimTextOutput('summary')
+                                div(style = 'overflow-y: scroll', tableOutput('summary'))
                        ),
                        tabPanel("Table",
                                 textOutput('nr'),
@@ -201,11 +200,11 @@ ui <- dashboardPage(
 
 
 server <- function(input, output) {
-    values <- reactiveValues(table = NULL,
+    values <- reactiveValues(dataset = NULL,
                              select = NULL,
                              outliers = NULL,
                              plot = NULL,
-                             camps = NULL)
+                             info_log = "")
 
     dataFile = reactive({
 
@@ -214,10 +213,21 @@ server <- function(input, output) {
         if (is.null(data))
             return(NULL)
 
+        values$info_log = paste0(values$info_log, "Data loaded", sep = '\n')
         file = read_dataset(data$datapath)
-        values$table = file
-        values$select = values$table
+        values$dataset = file
+        values$select = values$dataset
+
     })
+
+    output$downloadData <- downloadHandler(
+        filename = function() {
+            paste('test', '.csv', sep='')
+        },
+        content = function(file) {
+            write.csv(values$select, file, na = "", row.names = FALSE, quote = FALSE)
+        }
+    )
 
 
     info = reactive({
@@ -235,27 +245,8 @@ server <- function(input, output) {
         values$camps
     })
 
-    observeEvent(input$applyFilter, {
-        if (!is.null(values$select) & !is.null(input$filterList) && input$filterList != ""){
-            val = input$filterValue
-            colInfo = info()[[input$filterList]]
-
-            if (colInfo$type == 'numeric') {
-                values$select = selectNum(values$select, input$filterList, val[1], val[2])
-            } else {
-                if (!is.null(input$filterValue)) {
-                    values$select = selectFactor(values$select, input$filterList, val)
-                } else {
-                    print("Value not determined")
-                }
-            }
-        }
-
-    })
-
-
     numElements = reactive({
-        if (is.null(values$table)) {
+        if (is.null(values$dataset)) {
             return("")
         }
 
@@ -264,25 +255,54 @@ server <- function(input, output) {
     })
 
     output$table <- DT::renderDataTable({
-        if (is.null(values$table)) {
-            values$table = dataFile()
+        if (is.null(values$dataset)) {
+            values$dataset = dataFile()
         }
 
-        datatable(values$select, filter = 'top', options = list(scrollX = TRUE))
+        datatable(values$select,
+                  extensions = c("Scroller"),
+                  options = list(
+                      # dom = 't',
+                      # deferRender = TRUE,
+                      searching = TRUE,
+                      autoWidth = TRUE,
+                      # scrollCollapse = TRUE,
+                      rownames = TRUE,
+                      scroller = TRUE,
+                      scrollX = TRUE,
+                      scrollY = "500px",
+                      fixedHeader = TRUE,
+                      class = 'cell-border stripe',
+                      fixedColumns = list(
+                          leftColumns = 3,
+                          heightMatch = 'none'
+                      )
+                  )
+        )
 
     })
 
     output$nr = renderText({
-        if (is.null(values$table)) {
-            values$table = dataFile()
+        if (is.null(values$dataset)) {
+            values$dataset = dataFile()
         }
 
         numElements()
 
     })
 
-    output$summary = renderPrint({
-        getSummary(values$select)
+    output$summary = renderTable(rownames =  TRUE, {
+        # identifying numeric columns
+
+
+
+        # applying the function to numeric columns only
+        get_summary(values$select)
+    })
+
+
+    output$infoOutput = renderText({
+        values$info_log
     })
 
 
@@ -353,7 +373,7 @@ server <- function(input, output) {
 
 
     output$outlierUni = renderUI({
-        selectizeInput("outlierUni", "Column:", choices = camps(), width = "90%",
+        selectizeInput("outlierUni", "Column:", choices = names(info()), width = "90%",
                        options = list(
                            placeholder = 'Select an option',
                            onInitialize = I('function() { this.setValue(""); }')
@@ -381,12 +401,68 @@ server <- function(input, output) {
     })
 
 
+    observeEvent(input$applyFilter, {
+        if (!is.null(values$select) & !is.null(input$filterList) && input$filterList != ""){
+            val = input$filterValue
+            colInfo = info()[[input$filterList]]
+
+            if (colInfo$type == 'numeric') {
+                values$select = selectNum(values$select, input$filterList, val[1], val[2])
+
+            } else {
+                if (!is.null(input$filterValue)) {
+                    values$select = selectFactor(values$select, input$filterList, val)
+                } else {
+                    print("Value not determined")
+                }
+            }
+
+            n = nrow(values$select)
+            msg = paste(n, "rows seleceted")
+            values$info_log = paste0(values$info_log, msg, sep = '\n')
+        }
+
+    })
+
+
+    observeEvent(input$rmFilter, {
+        values$select = values$dataset
+        n = nrow(values$dataset)
+        msg = paste(n, "rows seleceted")
+        values$info_log = paste0(values$info_log, msg, sep = '\n')
+    })
+
+    observeEvent(input$rmUnselected, {
+        n = nrow(values$dataset) - nrow(values$select)
+        values$dataset = values$select
+        msg = paste(n, "rows deleted")
+        values$info_log = paste0(values$info_log, msg, sep = '\n')
+    })
+
     observeEvent(input$rmDup, {
+        old_nrow = nrow(values$select)
+        old_select = values$select
+
         values$select = getUnique(values$select)
+        dif_select = sub_dataset(old_select, values$select)
+
+        values$dataset = sub_dataset(values$dataset, dif_select)
+        n = old_nrow - nrow(values$select)
+        msg = paste(n, "rows deleted")
+        values$info_log = paste0(values$info_log, msg, sep = '\n')
     })
 
     observeEvent(input$rmNA, {
+        old_nrow = nrow(values$select)
+        old_select = values$select
+
         values$select = getCompleteRows(values$select)
+        dif_select = sub_dataset(old_select, values$select)
+
+        values$dataset = sub_dataset(values$dataset, dif_select)
+        n = old_nrow - nrow(values$select)
+        msg = paste(n, "rows deleted")
+        values$info_log = paste0(values$info_log, msg, sep = '\n')
     })
 
 
@@ -400,77 +476,92 @@ server <- function(input, output) {
 
 
     observeEvent(input$plotButton, {
-        if (input$plotTabset == "Univariate" && input$plotUni != "") {
+        if (input$plotTabset == "Univariate") {
             ct = info()[[input$plotUni]]$type
-            if (ct != "factor") {
-                output$plotOutput = renderPlot({
-                    isolate({
-                        plot_univar(values$select, input$plotUni, type = input$plotTypeUni, modifier = input$plotLogUni)
-                    })
-                })
-            } else {
-                print("Plot var must be numeric")
-            }
+            output$plotOutput = renderPlot({
+                isolate({
+                    validate(
+                        need(input$plotUni != "" && ct != "factor", "Select numeric column")
+                    )
 
-        } else if (input$plotTabset == "Bivariate" && input$plotBi1 != "" && input$plotBi2 != "") {
+                    plot_univar(values$select, input$plotUni, type = input$plotTypeUni, modifier = input$plotLogUni)
+                })
+
+            })
+
+        } else if (input$plotTabset == "Bivariate") {
             ct1 = info()[[input$plotBi1]]$type
             ct2 = info()[[input$plotBi2]]$type
-            if (ct1 != "factor" && ct2 != "factor") {
                 output$plotOutput = renderPlot({
                     isolate({
+                    validate(
+                        need(input$plotBi1 != "" && input$plotBi2 != "" && ct1 != "factor" && ct2 != "factor", "Select numeric columns")
+                    )
+
+
                         plot_bivar(values$select, input$plotBi1, input$plotBi2, type = input$plotTypeBi, modifier = input$plotLogBi)
 
                     })
                 })
-            } else {
-                print("Plot var must be numeric")
-            }
+
 
         }
     })
 
 
     output$plotOutput = renderPlot({
-        if (is.null(values$table)) {
-            values$table = dataFile()
+        if (is.null(values$dataset)) {
+            values$dataset = dataFile()
         }
 
+        validate(
+            need(!is.null(values$dataset), "Please select a data set")
+        )
     })
 
 
     observeEvent(input$outlierDetect, {
         if (input$outlierTabset == "Univariate" && input$outlierUni != "" ) {
             ct = info()[[input$outlierUni]]$type
+
             if (ct != "factor") {
                 output$plotOutput = renderPlot({
-                    isolate(plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni, input$outLogUni))
+                    isolate({
+                        plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni, input$outLogUni)
+                    })
                 })
 
                 out = univariate_outliers(values$select, input$outlierUni, input$outlierTypeUni, input$outLogUni)
-                print(out$info)
+                values$info_log = paste0(values$info_log, out$info, sep = '\n')
 
             } else {
-                print("Outlier var must be numeric")
+                print("Column must be numeric")
             }
 
-        } else if (input$outlierTabset == "Bivariate" && input$outlierBi1 != "" && input$outlierBi2 != "") {
+        } else if (input$outlierTabset == "Univariate") {
+            print("Select a column")
+        }
+
+        if (input$outlierTabset == "Bivariate" && input$outlierBi1 != "" && input$outlierBi2 != "") {
             ct1 = info()[[input$outlierBi1]]$type
             ct2 = info()[[input$outlierBi2]]$type
 
             if (ct1 != "factor" && ct2 != "factor") {
 
                 output$plotOutput = renderPlot({
-                    isolate(plot_bivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi))
+                    isolate({
+                        plot_bivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi)
+                    })
                 })
 
                 out = bivariate_outliers(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi)
-                print(out$info)
+                values$info_log = paste0(values$info_log, out$info, sep = '\n')
 
             } else {
-                print("Outlier var must be numeric")
+                print("Column must be numeric")
             }
-        } else {
-
+        } else if (input$outlierTabset == "Bivariate") {
+            print("Select two columns")
         }
 
     })
@@ -480,8 +571,11 @@ server <- function(input, output) {
             ct = info()[[input$outlierUni]]$type
             if (ct != "factor") {
                 out = remove_outliers(values$select, input$outlierUni, input$outlierTypeUni, input$outLogUni)
+                old_select = values$select
                 values$select = out$data
-                print(out$info)
+                dif_select = sub_dataset(old_select, values$select)
+                values$dataset = sub_dataset(values$dataset, dif_select)
+                values$info_log = paste0(values$info_log, out$info, sep = '\n')
 
                 output$plotOutput = renderPlot({
                     isolate(plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni))
@@ -492,25 +586,29 @@ server <- function(input, output) {
                 print("Outlier var must be numeric")
             }
 
-        } else if (input$outlierTabset == "Bivariate" && input$outlierBi1 != "" && input$outlierBi2 != "") {
+        } else if (input$outlierTabset == "Univariate") {
+            print("Select a column")
+        }
+
+        if (input$outlierTabset == "Bivariate" && input$outlierBi1 != "" && input$outlierBi2 != "") {
             ct1 = info()[[input$outlierBi1]]$type
             ct2 = info()[[input$outlierBi2]]$type
 
             if (ct1 != "factor" && ct2 != "factor") {
                 out = remove_outliers(values$select, c(input$outlierBi1, input$outlierBi2), input$outlierTypeBi, input$outLogBi)
                 values$select = out$data
-                print(out$info)
+                values$info_log = paste0(values$info_log, out$info, sep = '\n')
 
                 output$plotOutput = renderPlot({
                     isolate(plot_bivar(values$select, input$outlierBi1, input$outlierBi2, type = input$outlierTypeBi, input$outLogBi))
                 })
 
             } else {
-                print("Outlier var must be numeric")
+                print("Columns must be numeric")
             }
 
-        } else {
-
+        } else if (input$outlierTabset == "Bivariate") {
+            print("Select two columns")
         }
 
 
