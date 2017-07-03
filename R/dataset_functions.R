@@ -20,7 +20,10 @@ get_info = function(dataset) {
     for (t in colnames(dataset)) {
         col = dataset[[t]]
         if (is.numeric(col)) {
-            info[[t]] = list(type = "numeric", values = c(min(col, na.rm = TRUE), max(col, na.rm = TRUE)))
+            info[[t]] = list(type = "numeric",
+                             values = c(min(col, na.rm = TRUE),
+                                        max(col, na.rm = TRUE))
+                             )
 
         } else if(is.factor(col)) {
             info[[t]] = list(type = "factor", values = levels(col))
@@ -72,19 +75,13 @@ delete_column = function(dataset, var) {
 }
 
 
-get_complete_rows = function(data) {
-    if (is.null(data)) {
-        return(NULL)
-    }
-
-    return(data[complete.cases(data), ])
+get_complete_rows = function(dataset) {
+    if (is.null(dataset)) return()
+    return(dataset[complete.cases(dataset), ])
 }
 
 
-get_unique_rows = function(data) {
-    if (is.null(data)) {
-        return(NULL)
-    }
-
-    return(unique(data))
+get_unique_rows = function(dataset) {
+    if (is.null(dataset)) return()
+    return(unique(dataset))
 }
