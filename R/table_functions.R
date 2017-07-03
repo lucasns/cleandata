@@ -14,12 +14,6 @@ filter_num = function(data, var, begin, end) {
 }
 
 
-delete_column = function(dataset, var) {
-    dataset[var] = NULL
-    return(dataset)
-}
-
-
 get_info = function(dataset) {
     types = colnames(dataset)
     info = list()
@@ -69,4 +63,28 @@ sub_dataset = function(dataset_x, dataset_y) {
     new_data = dplyr::arrange(new_data, idx_aux)
     rownames(new_data) = new_data$idx_aux
     return(new_data[, !(colnames(new_data) == "idx_aux")])
+}
+
+
+delete_column = function(dataset, var) {
+    dataset[var] = NULL
+    return(dataset)
+}
+
+
+get_complete_rows = function(data) {
+    if (is.null(data)) {
+        return(NULL)
+    }
+
+    return(data[complete.cases(data), ])
+}
+
+
+get_unique_rows = function(data) {
+    if (is.null(data)) {
+        return(NULL)
+    }
+
+    return(unique(data))
 }
