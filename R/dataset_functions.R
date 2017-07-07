@@ -23,7 +23,7 @@ get_info = function(dataset) {
             info[[t]] = list(type = "numeric",
                              values = c(min(col, na.rm = TRUE),
                                         max(col, na.rm = TRUE))
-                             )
+            )
 
         } else if(is.factor(col)) {
             info[[t]] = list(type = "factor", values = levels(col))
@@ -35,19 +35,44 @@ get_info = function(dataset) {
 
 
 get_summary = function(dataset) {
-    list_summary <- function(x, na.rm=TRUE){
-        result <- list(Type = typeof(x),
-                       Mean=mean(x, na.rm=na.rm),
-                       SD=sd(x, na.rm=na.rm),
-                       Median=median(x, na.rm=na.rm),
-                       Min=min(x, na.rm=na.rm),
-                       Max=max(x, na.rm=na.rm),
-                       NAs=(sum(is.na(x))))
+    numeric_summary = function(x, na.rm=TRUE){
+        result = list(Type = class(x),
+                      Mean=mean(x, na.rm=na.rm),
+                      SD=sd(x, na.rm=na.rm),
+                      Median=median(x, na.rm=na.rm),
+                      Min=min(x, na.rm=na.rm),
+                      Max=max(x, na.rm=na.rm),
+                      Missing=paste0(sum(is.na(x)), " (",
+                                     round(100*sum(is.na(x)/length(x)),2),
+                                     "%)")
+
+        )
     }
 
-    num_cols <- sapply(dataset, is.numeric)
+    factor_summary = function(x){
+        result = list(Type = class(x),
+                      Levels = nlevels(x),
+                      Missing=paste0(sum(is.na(x)), " (",
+                                     round(100*sum(is.na(x)/length(x)),2),
+                                     "%)")
+        )
+    }
 
-    sapply(dataset[, num_cols], list_summary)
+    total_summary = function(dataset){
+        result = list("Nº types" = nrow(table(sapply(test, class))),
+                      Missing= nrow(dataset[!complete.cases(dataset),])
+        )
+    }
+
+    num_cols = sapply(dataset, is.numeric)
+    factor_cols = !num_cols
+
+    num_info = sapply(dataset[, num_cols], numeric_summary)
+    factor_info = sapply(dataset[, factor_cols], factor_summary)
+    total_info = matrix(total_summary(dataset),
+                        dimnames = list(names(a), "Total"))
+
+    return(list(numeric = num_info, factor = factor_info, total = total_info))
 }
 
 
