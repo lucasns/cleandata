@@ -25,7 +25,7 @@ outlier_mad = function(x, n = 2) {
 
 outlier_boxplot = function(x, rm_na = TRUE) {
     bp = boxplot(x)
-    out = data.frame(bp$out)
+    out = bp$out
     return(out)
 }
 
@@ -45,6 +45,8 @@ outlier_bv_boxplot = function(x, y) {
 
 
 univar_func = list(
+    sd2 = outlier_sd,
+    made2 = outlier_mad,
     boxplot = outlier_boxplot
 )
 
@@ -68,10 +70,17 @@ univariate_outliers = function(dataset, var, type = "boxplot", modifier = NULL, 
         x = apply_modifier(x, modifier)
     }
 
-    out = univar_func[[type]](x)
-    names(out) = var
+    out = NULL
+    info = "Error"
 
-    info = paste(nrow(out), "outliers detected")
+    tryCatch({
+        out = univar_func[[type]](x)
+        out = data.frame(out)
+        names(out) = var
+        info = paste(nrow(out), "outliers detected")
+    }, error = function(cond) {
+        print(cond)
+    })
 
     return(list(outliers = out, info = info))
 }
@@ -98,15 +107,16 @@ bivariate_outliers = function(dataset, var1, var2, type = "bvboxplot", modifier 
         y = aux_df[['y']]
     }
 
+    out = NULL
+    info = "Error"
+
     tryCatch({
         out = bivar_func[[type]](x, y)
         names(out) = c(var1, var2)
+        info = paste(nrow(out), "outliers detected")
     }, error = function(cond) {
-        out = NULL
         print(cond)
     })
-
-    info = paste(nrow(out), "outliers detected")
 
     return(list(outliers = out, info = info))
 }
@@ -126,11 +136,16 @@ remove_outliers = function(dataset, var, type, modifier = NULL) {
         dataset[var] = data.frame(lapply(dataset[var], function(x) apply_modifier(x, modifier)))
     }
 
-    clean_data = dplyr::anti_join(dataset, outliers, by = names(outliers))
-    clean_data = dplyr::arrange(clean_data, idx_aux)
-    rownames(clean_data) = clean_data$idx_aux
+    if (!is.null(outliers)) {
+        clean_data = dplyr::anti_join(dataset, outliers, by = names(outliers))
+        clean_data = dplyr::arrange(clean_data, idx_aux)
+        rownames(clean_data) = clean_data$idx_aux
 
-    info = paste(nrow(outliers), "rows with outliers removed")
+        info = paste(nrow(outliers), "rows with outliers removed")
+    } else {
+        info = "Error"
+        clean_data = NULL
+    }
 
     return(list(data = clean_data[, !(colnames(clean_data) == "idx_aux")], info = info))
 }
