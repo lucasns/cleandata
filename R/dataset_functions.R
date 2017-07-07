@@ -1,5 +1,5 @@
 read_dataset = function(file) {
-    dataset = read.csv(file)
+    dataset = read.csv(file, na.strings = c("NA", ""))
     return(dataset)
 }
 
