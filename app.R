@@ -4,7 +4,7 @@ library(DT)
 source("R/selection.R")
 source("R/plot.R")
 source("R/outlier.R")
-source("R/table_functions.R")
+source("R/dataset_functions.R")
 
 
 options(encoding = 'UTF-8')
@@ -51,6 +51,8 @@ body <- dashboardBody(
 
                    actionButton("applyFilter", "Apply"),
                    actionButton("rmFilter", "Remove Filters"),
+                   br(),
+                   br(),
                    actionButton("rmUnselected", "Remove Unselected"),
 
                    br(),
@@ -130,7 +132,9 @@ body <- dashboardBody(
                                 checkboxGroupInput("outLogUni", NULL, c(log = "log"), FALSE),
 
                                 selectInput("outlierTypeUni", "Method",
-                                            c("Bloxplot"="boxplot")
+                                            c("Bloxplot"="boxplot",
+                                              "2SD" = "sd2",
+                                              "2MADe" = "made2")
                                 )
 
 
@@ -481,10 +485,11 @@ server <- function(input, output) {
             output$plotOutput = renderPlot({
                 isolate({
                     validate(
-                        need(input$plotUni != "" && ct != "factor", "Select numeric column")
+                        need(input$plotUni != "" && ct != "factor", "Select numeric column"),
+                        need(plot_univar(values$select, input$plotUni, type = input$plotTypeUni, modifier = input$plotLogUni), "Error ploting")
                     )
 
-                    plot_univar(values$select, input$plotUni, type = input$plotTypeUni, modifier = input$plotLogUni)
+
                 })
 
             })
@@ -495,11 +500,10 @@ server <- function(input, output) {
                 output$plotOutput = renderPlot({
                     isolate({
                     validate(
-                        need(input$plotBi1 != "" && input$plotBi2 != "" && ct1 != "factor" && ct2 != "factor", "Select numeric columns")
+                        need(input$plotBi1 != "" && input$plotBi2 != "" && ct1 != "factor" && ct2 != "factor", "Select numeric columns"),
+                        need(plot_bivar(values$select, input$plotBi1, input$plotBi2, type = input$plotTypeBi, modifier = input$plotLogBi),
+                             "Error ploting")
                     )
-
-
-                        plot_bivar(values$select, input$plotBi1, input$plotBi2, type = input$plotTypeBi, modifier = input$plotLogBi)
 
                     })
                 })
@@ -527,7 +531,7 @@ server <- function(input, output) {
             if (ct != "factor") {
                 output$plotOutput = renderPlot({
                     isolate({
-                        plot_univar(values$select, input$outlierUni, type = input$outlierTypeUni, input$outLogUni)
+                        plot_univar(values$select, input$outlierUni, type = "boxplot", input$outLogUni)
                     })
                 })
 
