@@ -28,8 +28,14 @@ plot_univar = function(dataset, var, type="histogram", modifier = NULL, rm_na = 
                        }
     )
 
+    tryCatch({
+        plot_func(x, var_name)
+        return(TRUE)
+    }, error = function(cond) {
+        print(cond)
+    })
 
-    plot_func(x, var_name)
+    return(FALSE)
 }
 
 
@@ -73,5 +79,12 @@ plot_bivar = function(dataset, var1, var2, type="bvboxplot", modifier = NULL, rm
                        plot = plot
     )
 
-    plot_func(x, y, xlab = xl, ylab = yl)
+    tryCatch({
+        plot_func(x, y, xlab = xl, ylab = yl)
+        return(TRUE)
+    }, error = function(cond) {
+        print(cond)
+    })
+
+    return(FALSE)
 }
