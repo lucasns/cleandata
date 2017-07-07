@@ -182,7 +182,21 @@ body <- dashboardBody(
 
                        ),
                        tabPanel("Summary",
-                                div(style = 'overflow-y: scroll', tableOutput('summary'))
+                            div(style = "white-space:nowrap; overflow: scroll",
+                                div(style="display:inline-block; margin-right: 30px",
+                                    #h5("Numeric:"),
+                                    tableOutput("summary_num")),
+
+
+                                div(style="display:inline-block; margin-right: 30px; vertical-align: top;",
+                                    #h5("Factor:"),
+                                    tableOutput("summary_factor")),
+
+                                div(style="display:inline-block; vertical-align: top;",
+                                    #h5("Total:"),
+                                    tableOutput("summary_total"))
+                            )
+
                        ),
                        tabPanel("Table",
                                 textOutput('nr'),
@@ -295,13 +309,16 @@ server <- function(input, output) {
 
     })
 
-    output$summary = renderTable(rownames =  TRUE, {
-        # identifying numeric columns
+    output$summary_num = renderTable(rownames =  TRUE, {
+        get_summary(values$select)$numeric
+    })
 
+    output$summary_factor = renderTable(rownames =  TRUE, {
+        get_summary(values$select)$factor
+    })
 
-
-        # applying the function to numeric columns only
-        get_summary(values$select)
+    output$summary_total = renderTable(rownames =  TRUE, {
+        get_summary(values$select)$total
     })
 
 
@@ -497,16 +514,16 @@ server <- function(input, output) {
         } else if (input$plotTabset == "Bivariate") {
             ct1 = info()[[input$plotBi1]]$type
             ct2 = info()[[input$plotBi2]]$type
-                output$plotOutput = renderPlot({
-                    isolate({
+            output$plotOutput = renderPlot({
+                isolate({
                     validate(
                         need(input$plotBi1 != "" && input$plotBi2 != "" && ct1 != "factor" && ct2 != "factor", "Select numeric columns"),
                         need(plot_bivar(values$select, input$plotBi1, input$plotBi2, type = input$plotTypeBi, modifier = input$plotLogBi),
                              "Error ploting")
                     )
 
-                    })
                 })
+            })
 
 
         }
